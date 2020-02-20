@@ -2,7 +2,7 @@
 {-# Language BlockArguments #-}
 {-# Language RecordWildCards #-}
 
-module Data.Spew.Packet
+module Data.Carousel.Packet
   ( Packet(..)
   ) where
 

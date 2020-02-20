@@ -1,15 +1,15 @@
 {-# Language PatternSynonyms #-}
 {-# Language BlockArguments #-}
-module Data.Spew.Decode
+module Data.Carousel.Gather
   ( suck
   , Sucker(..)
   ) where
 
 import Control.Monad (unless)
-import Data.Spew.Codec
-import Data.Spew.Filter
+import Data.Carousel.Codec
+import Data.Carousel.Filter
 
-data Sucker = 
+data Sucker =
   forall s. Sucker
   { serviceName :: String
   , packetFilter :: Filter Packet

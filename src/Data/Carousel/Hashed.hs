@@ -1,4 +1,4 @@
-module Data.Spew.Hashed
+module Data.Carousel.Hashed
   ( Hashed(..)
   ) where
 

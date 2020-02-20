@@ -1,12 +1,16 @@
 cabal-version: 2.4
-name: spew
+name: carousel
 version: 0
 license: MIT
 license-file: LICENSE
 author: Edward A. Kmett
 maintainer: Edward A. Kmett <ekmett@gmail.com>
 stability: experimental
-copyright: Copyright (C) 2020 Edward A. Kmett
+copyright:
+  (c) 2020 Edward A. Kmett,
+  (c) 2015-2016, Nicolas Trangez,
+  (c) 2015, Klaus Post,
+  (c) 2015, Backblaze
 build-type: Simple
 
 common base
@@ -35,23 +39,25 @@ library
     transformers,
     vector,
     vector-split
+
+  -- Data.Carousel.Gather
   exposed-modules:
-    Data.Spew
-    Data.Spew.Codec
-    Data.Spew.Encode
-    Data.Spew.Filter
-    Data.Spew.Hashed
-    Data.Spew.Packet
+    Data.Carousel
+    Data.Carousel.Codec
+    Data.Carousel.Scatter
+    Data.Carousel.Filter
+    Data.Carousel.Hashed
+    Data.Carousel.Packet
     Galois.Field
     Galois.Matrix
   other-modules:
-    Data.Spew.Util
+    Data.Carousel.Util
   hs-source-dirs: src
 
-executable spew
+executable carousel
   import: base
   main-is: app/Main.hs
   build-depends:
-    spew,
+    iproute,
     optparse-applicative,
-    iproute
+    carousel

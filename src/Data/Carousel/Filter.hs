@@ -1,5 +1,5 @@
 {-# Language BlockArguments #-}
-module Data.Spew.Filter
+module Data.Carousel.Filter
   ( Filter(..)
   ) where
 
