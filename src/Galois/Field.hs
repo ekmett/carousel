@@ -130,7 +130,7 @@ instance Fractional G where
 gvmul :: PrimMonad m => MS.MVector (PrimState m) G -> G -> S.Vector G -> m ()
 gvmul o (G c) i = do
   let mt = plusPtr muls $ 256 * fromIntegral c
-  numLoop 0 (S.length i - 1) \j -> do
+  numLoop 0 (MS.length o - 1) \j -> do
     G a <- S.unsafeIndexM i j
     b <- pkM mt $ fromIntegral a
     MS.unsafeWrite o j $ G b
@@ -139,7 +139,7 @@ gvmul o (G c) i = do
 gvfma :: PrimMonad m => MS.MVector (PrimState m) G -> G -> S.Vector G -> m ()
 gvfma o (G c) i = do
   let mt = plusPtr muls $ 256 * fromIntegral c
-  numLoop 0 (S.length i - 1) \j -> do
+  numLoop 0 (MS.length o - 1) \j -> do
     G a <- S.unsafeIndexM i j
     b <- pkM mt $ fromIntegral a
     x <- MS.unsafeRead o j

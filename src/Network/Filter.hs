@@ -1,5 +1,5 @@
 {-# Language BlockArguments #-}
-module Data.Spew.Filter
+module Network.Filter
   ( Filter(..)
   ) where
 

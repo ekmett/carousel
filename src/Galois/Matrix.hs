@@ -3,6 +3,7 @@
 {-# Language PatternGuards #-}
 module Galois.Matrix
   ( Matrix(..)
+  , Vec
   , ident
   , mul
   , submatrix
@@ -25,13 +26,13 @@ import qualified Data.Vector.Storable as SV
 import Control.Loop (numLoop, numLoopFold)
 import Galois.Field
 
-type Row = SV.Vector G
+type Vec = SV.Vector G
 
 -- | A row-major 'Matrix' of G entries
 -- TODO: columns should be stored so we can have a 0 row matrix
 -- TODO: allow 0 padding at the end of the individual rows, (ragged right margins) only really affects the zipWiths
 -- this would enable us to not have to 0 pad in the carve function
-data Matrix = Matrix {-# UNPACK #-} !Int {-# UNPACK #-} !(V.Vector Row)
+data Matrix = Matrix {-# UNPACK #-} !Int {-# UNPACK #-} !(V.Vector Vec)
   deriving Show
 
 matrixSize :: Matrix -> (Int, Int)
@@ -80,7 +81,7 @@ mul m n
     y = cols m
     z = cols n
 
-vec :: Matrix -> V.Vector Row
+vec :: Matrix -> V.Vector Vec
 vec (Matrix _ v) = v
 
 augment :: Matrix -> Matrix -> Matrix
@@ -99,9 +100,6 @@ submatrix (Matrix cs m) rmin cmin rmax cmax
   | cmin == 0, cmax == cs = Matrix cs m' 
   | cs' <- cmax - cmin = Matrix cs' $ SV.slice cmin cs' <$> m'
   where m' = V.slice rmin (rmax - rmin) m
-
-swapRows :: V.MVector s a -> Int -> Int -> ST s ()
-swapRows = GMV.swap
 
 isSquare :: Matrix -> Bool
 isSquare m = rows m == cols m
@@ -128,7 +126,7 @@ gaussianElimination = modify \ m -> do
       let go i = when (i < n) $
             load m i r >>= \scale ->
               if scale /= 0
-              then swapRows m r i
+              then GMV.swap m r i
               else go (i+1)
       go (r+1)
 
@@ -155,7 +153,7 @@ gaussianElimination = modify \ m -> do
         md <- GMV.read m d
         GMV.write m i $ SV.zipWith (+) mi $ SV.map (scale *) md
   where
-    load :: V.MVector s Row -> Int -> Int -> ST s G
+    load :: V.MVector s Vec -> Int -> Int -> ST s G
     load m i j = do
       r <- GMV.read m i
       SV.indexM r j
@@ -167,5 +165,5 @@ vandermonde rs cs = generate rs cs \i j -> X i ^ j
 rowmatrix :: Matrix -> Int -> Matrix
 rowmatrix (Matrix cs m) i = Matrix cs $ V.singleton (m V.! i)
 
-row :: Matrix -> Int -> Row
+row :: Matrix -> Int -> Vec
 row (Matrix _ m) i = m V.! i

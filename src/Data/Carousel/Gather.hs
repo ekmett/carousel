@@ -1,6 +1,6 @@
 {-# Language PatternSynonyms #-}
 {-# Language BlockArguments #-}
-module Data.Spew.Decode
+module Data.Carousel.Gather
   ( suck
   , Sucker(..)
   ) where
@@ -8,12 +8,12 @@ module Data.Spew.Decode
 import Control.Monad (unless)
 import Data.HashMap.Strict as HM
 import Data.IORef
-import Data.Spew.Codec
-import Data.Spew.Filter
+import Data.Carousel.Codec
+import Data.Carousel.Filter
 import Data.Vector as V
 import Data.Vector.Mutable as MV
 
-data Sucker = 
+data Sucker =
   forall s. Sucker
   { serviceName :: String
   , packetFilter :: Filter Packet
@@ -118,5 +118,3 @@ process iops sucker packet sender = do
     Just fs -> do
       -- TODO: lint for sanity to make sure the parameters match
       <- MV.read (fileData fs) (fromIntegral $ packetChunkId p)
-  
-  
