@@ -5,6 +5,7 @@ module Data.Spew
   , parityShards
   , encode
   , Packet
+  , spew
   ) where
 
 import Data.Spew.Codec
