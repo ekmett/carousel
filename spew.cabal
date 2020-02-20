@@ -23,6 +23,7 @@ library
   build-depends:
     bytestring-to-vector,
     cereal,
+    contravariant,
     cryptohash-sha256,
     exceptions,
     hashable,
@@ -38,6 +39,7 @@ library
     Data.Spew
     Data.Spew.Codec
     Data.Spew.Encode
+    Data.Spew.Filter
     Data.Spew.Hashed
     Data.Spew.Packet
     Galois.Field

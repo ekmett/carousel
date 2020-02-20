@@ -24,7 +24,7 @@ import Data.Vector.Split
 import Data.Vector.Storable.ByteString
 import Data.Word
 import Galois.Matrix as Mat
-import HaskellWorks.Data.ByteString (resegmentPadded)
+import HaskellWorks.Data.ByteString
 import Network.Socket
 import System.IO
 
@@ -51,6 +51,7 @@ encodePayload codec shardId chunk =
     if s < dataShards codec
     then row cd s
     else row (rowmatrix (codecMatrix codec) (fromIntegral shardId) <> cd) 0
+      -- TODO: use gvfma,etc.
   where
     s = fromIntegral shardId 
     cd = chunkMatrix chunk
@@ -59,14 +60,18 @@ encodePayload codec shardId chunk =
 spew :: MonadIO m => Codec -> SockAddr -> Bool -> 
    m (Strict.ByteString -> Lazy.ByteString -> IO ())
 spew codec sockaddr broadcast = liftIO do
+  System.IO.putStrLn "Opening socket"
   sock <- socket AF_INET Datagram 0
   when broadcast $ setSocketOption sock Broadcast 1
   connect sock sockaddr
   handle <- socketToHandle sock WriteMode
   return \fileName content -> do
-   let packets = encodePackets codec fileName content
-   Foldable.forM_ packets $
-     Strict.hPutStr handle . runPut . put . Hashed
+    System.IO.putStrLn "encoding packets"
+    let packets = encodePackets codec fileName content
+    print packets
+    System.IO.putStrLn "sending packets"
+    Foldable.forM_ packets $
+      Strict.hPutStr handle . runPut . put . Hashed
 
 encodePackets :: Codec -> Strict.ByteString -> Lazy.ByteString -> [Packet]
 encodePackets codec fileName content =
@@ -77,7 +82,7 @@ encodePackets codec fileName content =
      shardId
      (fromIntegral $ dataShards codec)
      fileName
-  | shardId <- [0..fromIntegral $ shards codec - 1]
+  | shardId <- [0..fromIntegral $ dataShards codec - 1]
   , chunkId <- shuffleWith shardId $ fromIntegral numChunks
   ] where
 
@@ -90,5 +95,6 @@ encodePackets codec fileName content =
   numChunks :: Word64
   numChunks = cdiv fileSize cs
 
-  chunks = V.fromList $
-    carve <$> resegmentPadded (fromIntegral cs) (Lazy.toChunks content)
+  chunks = V.fromList do
+    big <- resegmentPadded (fromIntegral cs) (Lazy.toChunks content)
+    carve <$> chunkedBy (fromIntegral cs) big
