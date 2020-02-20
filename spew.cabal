@@ -24,17 +24,24 @@ library
     data-default,
     exceptions,
     hashable,
+    hw-prim,
     loop,
     mtl,
+    network,
     primitive,
     template-haskell,
-    vector
+    vector,
+    vector-split
   exposed-modules:
     Data.Spew
     Data.Spew.Codec
     Data.Spew.Encode
+    Data.Spew.Hashed
+    Data.Spew.Packet
     Galois.Field
     Galois.Matrix
+  other-modules:
+    Data.Spew.Util
   hs-source-dirs: src
 
 executable spew

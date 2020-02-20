@@ -9,6 +9,7 @@ module Galois.Matrix
   , inv
   , vandermonde
   , rowmatrix
+  , vec
   , row
   , rows, cols
   ) where
