@@ -13,11 +13,12 @@ import Options.Applicative
 
 data Options
   = Options
-  { ip :: IP
-  , port :: PortNumber
-  , broadcast :: Bool
-  , dshards :: Int
-  , files :: [FilePath]
+  { ip          :: !IP
+  , port        :: !PortNumber
+  , broadcast   :: !Bool
+  , payloadSize :: {-# UNPACK #-} !Int
+  , dshards     :: {-# UNPACK #-} !Int
+  , files       :: [FilePath]
   }
 
 options :: Parser Options
@@ -26,22 +27,33 @@ options = Options
     ( long "host"
    <> short 'h'
    <> help "target IP address"
-   <> metavar "target host address")
+   <> value (read "127.0.0.1")
+   <> showDefault
+   <> metavar "HOST")
   <*> option auto
     ( long "port"
    <> short 'p'
    <> help "target port number"
-   <> metavar "port" )
+   <> showDefault
+   <> value 20202
+   <> metavar "PORT" )
   <*> switch 
     ( long "broadcast"
    <> short 'b'
    <> help "use a broadcast port")
   <*> option auto
+    ( long "payload"
+   <> short 'l'
+   <> help "packet payload size"
+   <> metavar "BYTES"
+   <> showDefault
+   <> value 1024)
+  <*> option auto
     ( long "data-shards"
    <> short 'd'
    <> help "number of data shards"
    <> showDefault
-   <> value 64
+   <> value 16
    <> metavar "INT" )
   <*> some (argument str (metavar "FILES..."))
 
@@ -54,11 +66,11 @@ mainOptions = info (options <**> helper)
 main :: IO ()
 main = do
   Options{..} <- execParser mainOptions
-  send <- spew (Codec.new dshards) (toSockAddr (ip,port)) broadcast
+  emit <- spew (Codec.new payloadSize dshards) (toSockAddr (ip,port)) broadcast
   Foldable.forM_ files \file -> do
     Prelude.putStrLn $ "reading " ++ show file
     content <- Lazy.readFile file
     Prelude.putStrLn $ "sending " ++ show file
-    send (fromString file) content
+    emit (fromString file) content
     Prelude.putStrLn $ "sent " ++ show file
 

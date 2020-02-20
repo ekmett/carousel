@@ -1,8 +1,5 @@
 module Data.Spew
   ( Codec
-  , shards
-  , dataShards
-  , parityShards
   , encode
   , Packet
   , spew

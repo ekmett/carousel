@@ -5,35 +5,43 @@
 module Data.Spew.Codec
   ( Codec(..)
   , new
-  , shards
-  , dataShards
+  , pattern SHARDS
   , parityShards
   ) where
 
 import Data.Default
 import Galois.Matrix as Mat
+import Data.Vector as V
+import Data.Vector.Storable as S
 
-newtype Codec = Codec
-  { codecMatrix :: Matrix
+-- @SHARDS x dataShards c@ matrix represented by a storable vector
+type CodecMatrix = Vec
+
+data Codec = Codec
+  { payloadSize :: {-# UNPACK #-} !Int
+  , dataShards  :: {-# UNPACK #-} !Int
+  -- , codecMatrix :: {-# UNPACK #-} !Matrix
+  , packedCodec :: {-# UNPACK #-} !CodecMatrix
   } deriving Show
 
-shards :: Codec -> Int
-shards = rows . codecMatrix
-
-dataShards :: Codec -> Int
-dataShards = cols . codecMatrix 
+pattern SHARDS :: Int
+pattern SHARDS = 255
 
 parityShards :: Codec -> Int
-parityShards c = rows m - cols m where m = codecMatrix c
+parityShards c = SHARDS - dataShards c
 
-new :: Int -> Codec
-new ds
+new :: Int -> Int -> Codec
+new pls ds 
   | ds <= 0   = error "no data shards"
   | ds >= 256 = error "too many data shards"
-  | otherwise = Codec $ Mat.mul vm $ Mat.inv $ submatrix vm 0 0 ds ds
+  | pls == 0  = error "no payload"
+  | pls > 65535 = error "payload too large"
+  | otherwise = Codec pls ds pm
   where
     ss = 255
     vm = vandermonde ss ds
+    m = Mat.mul vm $ Mat.inv $ submatrix vm 0 0 ds ds
+    pm = S.concat $ V.toList (vec m)
 
 instance Default Codec where
-  def = new 64
+  def = new 1024 16
