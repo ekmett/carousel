@@ -10,26 +10,28 @@ copyright: Copyright (C) 2020 Edward A. Kmett
 build-type: Simple
 
 common base
-  build-depends: base
+  build-depends:
+    base,
+    bytestring,
+    data-default,
+    network
   ghc-options: -Wall
   default-language: Haskell2010
 
 library
   import: base
   build-depends:
-    bytestring,
     bytestring-to-vector,
     cereal,
     cryptohash-sha256,
-    data-default,
     exceptions,
     hashable,
     hw-prim,
     loop,
     mtl,
-    network,
     primitive,
     template-haskell,
+    transformers,
     vector,
     vector-split
   exposed-modules:
@@ -48,4 +50,6 @@ executable spew
   import: base
   main-is: app/Main.hs
   build-depends:
-    spew
+    spew,
+    optparse-applicative,
+    iproute

@@ -9,6 +9,8 @@ module Data.Spew.Encode
   , spew
   ) where
 
+import Control.Monad (when)
+import Control.Monad.IO.Class
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
 import Data.Foldable as Foldable
@@ -54,14 +56,17 @@ encodePayload codec shardId chunk =
     cd = chunkMatrix chunk
 
 -- eventually do something other than ^C to quit here
-spew :: Codec -> SockAddr -> Strict.ByteString -> Lazy.ByteString -> IO ()
-spew codec sockaddr fileName content = do
+spew :: MonadIO m => Codec -> SockAddr -> Bool -> 
+   m (Strict.ByteString -> Lazy.ByteString -> IO ())
+spew codec sockaddr broadcast = liftIO do
   sock <- socket AF_INET Datagram 0
-  setSocketOption sock Broadcast 1
+  when broadcast $ setSocketOption sock Broadcast 1
   connect sock sockaddr
   handle <- socketToHandle sock WriteMode
-  let packets = encodePackets codec fileName content
-  Foldable.forM_ packets $ Strict.hPutStr handle . runPut . put . Hashed
+  return \fileName content -> do
+   let packets = encodePackets codec fileName content
+   Foldable.forM_ packets $
+     Strict.hPutStr handle . runPut . put . Hashed
 
 encodePackets :: Codec -> Strict.ByteString -> Lazy.ByteString -> [Packet]
 encodePackets codec fileName content =
