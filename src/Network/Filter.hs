@@ -1,5 +1,5 @@
 {-# Language BlockArguments #-}
-module Data.Carousel.Filter
+module Network.Filter
   ( Filter(..)
   ) where
 

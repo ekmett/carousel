@@ -13,9 +13,8 @@ import Data.ByteString.Lazy as Lazy
 import Data.Foldable as Foldable
 import Data.Serialize
 import Data.Carousel.Codec
-import Data.Carousel.Hashed
+import Data.Carousel.Internal
 import Data.Carousel.Packet
-import Data.Carousel.Util
 import Data.Vector as V
 import Data.Vector.Storable as S
 import Data.Vector.Storable.Mutable as MS

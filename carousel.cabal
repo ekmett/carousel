@@ -45,13 +45,11 @@ library
     Data.Carousel
     Data.Carousel.Codec
     Data.Carousel.Scatter
-    Data.Carousel.Filter
-    Data.Carousel.Hashed
     Data.Carousel.Packet
+    Data.Carousel.Internal
     Galois.Field
     Galois.Matrix
-  other-modules:
-    Data.Carousel.Util
+    Network.Filter
   hs-source-dirs: src
 
 executable carousel
