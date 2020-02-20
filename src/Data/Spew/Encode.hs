@@ -26,6 +26,7 @@ import Data.Word
 import Galois.Matrix as Mat
 import HaskellWorks.Data.ByteString
 import Network.Socket
+import Network.Socket.ByteString as Strict
 import System.IO
 
 -- a @dataShards codec x PAYLOAD_SIZE@ matrix
@@ -64,14 +65,13 @@ spew codec sockaddr broadcast = liftIO do
   sock <- socket AF_INET Datagram 0
   when broadcast $ setSocketOption sock Broadcast 1
   connect sock sockaddr
-  handle <- socketToHandle sock WriteMode
   return \fileName content -> do
     System.IO.putStrLn "encoding packets"
     let packets = encodePackets codec fileName content
     print packets
     System.IO.putStrLn "sending packets"
     Foldable.forM_ packets $
-      Strict.hPutStr handle . runPut . put . Hashed
+      Strict.send sock . runPut . put . Hashed
 
 encodePackets :: Codec -> Strict.ByteString -> Lazy.ByteString -> [Packet]
 encodePackets codec fileName content =
