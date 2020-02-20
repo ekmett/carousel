@@ -90,12 +90,12 @@ augment m n
 
 submatrix :: Matrix -> Int -> Int -> Int -> Int -> Matrix
 submatrix (Matrix cs m) rmin cmin rmax cmax
-  -- | cmin < 0 = error "submatrix column starts <= 0"
-  -- | cmin > cmax = error "submatrix starts after it ends"
-  -- | cmin > cs = error "submatrix column starts > end"
-  -- | rmin < 0 = error "submatrix row starts < 0"
-  -- | rmin > rmax = error "submatrix row starts after it ends"
-  -- | rmin > V.length m = error "submatrix row starts > end"
+  | cmin < 0 = error "submatrix column starts < 0"
+  | cmin > cmax = error "submatrix starts after it ends"
+  | cmin > cs = error "submatrix column starts > end"
+  | rmin < 0 = error "submatrix row starts < 0"
+  | rmin > rmax = error "submatrix row starts after it ends"
+  | rmin > V.length m = error "submatrix row starts > end"
   | cmin == 0, cmax == cs = Matrix cs m' 
   | cs' <- cmax - cmin = Matrix cs' $ SV.slice cmin cs' <$> m'
   where m' = V.slice rmin (rmax - rmin) m
@@ -161,7 +161,8 @@ gaussianElimination = modify \ m -> do
       SV.indexM r j
 
 vandermonde :: Int -> Int -> Matrix
-vandermonde rs cs = generate rs cs \i j -> X i ^ j -- G (i+1) ^ j would be a little cheaper, but a different order
+vandermonde rs cs = generate rs cs \i j -> X i ^ j
+  -- G (i+1) ^ j would be a little cheaper, but a different order
 
 rowmatrix :: Matrix -> Int -> Matrix
 rowmatrix (Matrix cs m) i = Matrix cs $ V.singleton (m V.! i)
