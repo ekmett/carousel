@@ -1,12 +1,20 @@
 {-# Language PatternSynonyms #-}
 {-# Language BlockArguments #-}
 {-# Language RecordWildCards #-}
+{-# Language ImplicitParams #-}
+{-# Language ConstraintKinds #-}
+{-# Language RankNTypes #-}
 
 module Data.Spew.Codec
   ( Codec(..)
+  , GivenCodec
   , new
+  , with
   , pattern SHARDS
   , parityShards
+  , dataShards
+  , payloadSize
+  , code
   ) where
 
 import Data.Default
@@ -18,17 +26,28 @@ import Data.Vector.Storable as S
 type CodecMatrix = Vec
 
 data Codec = Codec
-  { payloadSize :: {-# UNPACK #-} !Int
-  , dataShards  :: {-# UNPACK #-} !Int
-  -- , codecMatrix :: {-# UNPACK #-} !Matrix
-  , packedCodec :: {-# UNPACK #-} !CodecMatrix
-  } deriving Show
+  { _payloadSize :: {-# UNPACK #-} !Int
+  , _dataShards :: {-# UNPACK #-} !Int
+  , _code :: {-# UNPACK #-} !CodecMatrix
+  }
+
+
+payloadSize :: GivenCodec => Int
+payloadSize = _payloadSize ?codec
+
+dataShards :: GivenCodec => Int
+dataShards = _dataShards ?codec
+
+code :: GivenCodec => CodecMatrix
+code = _code ?codec
+
+type GivenCodec = (?codec :: Codec)
 
 pattern SHARDS :: Int
 pattern SHARDS = 255
 
-parityShards :: Codec -> Int
-parityShards c = SHARDS - dataShards c
+parityShards :: GivenCodec => Int
+parityShards = SHARDS - dataShards
 
 new :: Int -> Int -> Codec
 new pls ds 
@@ -42,6 +61,9 @@ new pls ds
     vm = vandermonde ss ds
     m = Mat.mul vm $ Mat.inv $ submatrix vm 0 0 ds ds
     pm = S.concat $ V.toList (vec m)
+
+with :: Codec -> (GivenCodec => r) -> r
+with c f = let ?codec = c in f
 
 instance Default Codec where
   def = new 1024 16

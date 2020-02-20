@@ -32,48 +32,45 @@ import System.IO
 
 -- an @dataShards x payloadSize@ row major matrix as a single vector
 type Chunk = Vec
-    
+
 -- TODO: seed a pseudo-random shuffle based on shard for periodic noise handling
 shuffleWith :: Int -> Int -> [Int]
 shuffleWith _ i = [0..i-1]
 
-encodePayload :: Codec -> Int -> Chunk -> Vec
-encodePayload Codec{..} shard chunk
+encodePayload :: GivenCodec => Int -> Chunk -> Vec
+encodePayload shard chunk
   | shard < dataShards = S.slice (payloadSize*shard) payloadSize chunk
   | otherwise = S.create do
   mv <- MS.new payloadSize
-  let r = S.drop (dataShards*shard) packedCodec
+  let r = S.drop (dataShards*shard) code
   gvmul mv (S.head r) chunk
   mv <$ numLoop 1 (S.length r - 1) \i ->
     gvfma mv (r S.! i) $ S.drop (payloadSize*i) chunk
 
 -- eventually do something other than ^C to quit here
-spew :: MonadIO m => Codec -> SockAddr -> Bool -> 
+spew :: (MonadIO m, GivenCodec) => SockAddr -> Bool ->
    m (Strict.ByteString -> Lazy.ByteString -> IO ())
-spew codec sockaddr broadcast = liftIO do
+spew sockaddr broadcast = liftIO do
   System.IO.putStrLn "Opening socket"
   sock <- socket AF_INET Datagram 0
   when broadcast $ setSocketOption sock Broadcast 1
   connect sock sockaddr
   return \fileName content -> do
     System.IO.putStrLn "encoding packets"
-    let packets = encodePackets codec fileName content
+    let packets = encodePackets fileName content
     print packets
     System.IO.putStrLn "sending packets"
     Foldable.forM_ packets $
       Strict.send sock . runPut . put . Hashed
 
-encodePackets :: Codec -> Strict.ByteString -> Lazy.ByteString -> [Packet]
-encodePackets codec@Codec{..} fileName content = do
-  shardId <- [0..SHARDS-1]
-  chunkId <- shuffleWith shardId numChunks
+encodePackets :: GivenCodec => Strict.ByteString -> Lazy.ByteString -> [Packet]
+encodePackets fileName content = do
+  shard <- [0..SHARDS-1]
+  chunk <- shuffleWith shard numChunks
   pure Packet
-    { packetPayload = vectorToByteString $ encodePayload codec shardId $ chunks V.! chunkId
-    , packetFileSize = fromIntegral fileSize
-    , packetChunkId = fromIntegral chunkId
-    , packetShardId = fromIntegral shardId
-    , packetDataShards = fromIntegral dataShards
-    , packetFileName =  fileName
+    { payload = vectorToByteString $ encodePayload shard $ chunks V.! chunk
+    , shards = dataShards
+    , ..
     }
   where
     fileSize = fromIntegral $ Lazy.length content

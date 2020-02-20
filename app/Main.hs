@@ -13,12 +13,12 @@ import Options.Applicative
 
 data Options
   = Options
-  { ip          :: !IP
-  , port        :: !PortNumber
-  , broadcast   :: !Bool
-  , payloadSize :: {-# UNPACK #-} !Int
-  , dshards     :: {-# UNPACK #-} !Int
-  , files       :: [FilePath]
+  { ip        :: !IP
+  , port      :: !PortNumber
+  , broadcast :: !Bool
+  , payload   :: {-# UNPACK #-} !Int
+  , dshards   :: {-# UNPACK #-} !Int
+  , files     :: [FilePath]
   }
 
 options :: Parser Options
@@ -66,11 +66,12 @@ mainOptions = info (options <**> helper)
 main :: IO ()
 main = do
   Options{..} <- execParser mainOptions
-  emit <- spew (Codec.new payloadSize dshards) (toSockAddr (ip,port)) broadcast
-  Foldable.forM_ files \file -> do
-    Prelude.putStrLn $ "reading " ++ show file
-    content <- Lazy.readFile file
-    Prelude.putStrLn $ "sending " ++ show file
-    emit (fromString file) content
-    Prelude.putStrLn $ "sent " ++ show file
+  Codec.with (Codec.new payload dshards) do
+    emit <- spew (toSockAddr (ip,port)) broadcast
+    Foldable.forM_ files \file -> do
+      Prelude.putStrLn $ "reading " ++ show file
+      content <- Lazy.readFile file
+      Prelude.putStrLn $ "sending " ++ show file
+      emit (fromString file) content
+      Prelude.putStrLn $ "sent " ++ show file
 

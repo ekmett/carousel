@@ -8,7 +8,6 @@ module Data.Spew.Packet
 
 import Data.ByteString
 import Data.Serialize
-import Data.Word
 
 -- filename.xxx.nnn.spew, metadata gets written at the end of spewdata
 -- xxx = # of datashards
@@ -22,22 +21,22 @@ import Data.Word
 -- this many bytes
 
 data Packet = Packet
-  { packetFileSize    :: {-# UNPACK #-} !Word64
-  , packetChunkId     :: {-# UNPACK #-} !Word64
-  , packetShardId     :: {-# UNPACK #-} !Word8
-  , packetDataShards  :: {-# UNPACK #-} !Word8 -- determine data file and codec
-  , packetPayload     :: {-# UNPACK #-} !ByteString -- exactly codecPayload bytes
-  , packetFileName    :: !ByteString
+  { fileSize :: {-# UNPACK #-} !Int
+  , chunk    :: {-# UNPACK #-} !Int
+  , shard    :: {-# UNPACK #-} !Int
+  , shards   :: {-# UNPACK #-} !Int
+  , payload  :: {-# UNPACK #-} !ByteString
+  , fileName :: !ByteString
   } -- deriving Show
 
 instance Show Packet where
   showsPrec d Packet{..} = showParen (d > 10) $
-    showString "Packet " . showsPrec 11 packetFileSize 
-          . showChar ' ' . showsPrec 11 packetChunkId
-          . showChar ' ' . showsPrec 11 packetShardId
-          . showChar ' ' . showsPrec 11 packetDataShards
-          . showChar ' ' . showsPrec 11 (fst $ spanEnd (==0) packetPayload) -- for sanity
-          . showChar ' ' . showsPrec 11 packetFileName
+    showString "Packet " . showsPrec 11 fileSize
+          . showChar ' ' . showsPrec 11 chunk
+          . showChar ' ' . showsPrec 11 shard
+          . showChar ' ' . showsPrec 11 shards
+          . showChar ' ' . showsPrec 11 (fst $ spanEnd (==0) payload) -- for sanity, we don't Read
+          . showChar ' ' . showsPrec 11 fileName
 
 putBS16 :: Putter ByteString
 putBS16 = putNested (putWord16be . fromIntegral) . putByteString
@@ -49,17 +48,17 @@ getBS16 = do
 
 instance Serialize Packet where
   put Packet{..} = do
-    putWord64be packetFileSize
-    putWord64be packetChunkId
-    putWord8 packetShardId
-    putWord8 packetDataShards
-    putBS16 packetPayload
-    putBS16 packetFileName
+    putWord64be $ fromIntegral fileSize
+    putWord64be $ fromIntegral chunk
+    putWord8 $ fromIntegral shard
+    putWord8 $ fromIntegral shards
+    putBS16 payload
+    putBS16 fileName
   get = do
-    packetFileSize <- getWord64be
-    packetChunkId <- getWord64be
-    packetShardId <- getWord8
-    packetDataShards <- getWord8
-    packetPayload <- getBS16
-    packetFileName <- getBS16
+    fileSize <- fromIntegral <$> getWord64be
+    chunk <- fromIntegral <$> getWord64be
+    shard <- fromIntegral <$> getWord8
+    shards <- fromIntegral <$> getWord8
+    payload <- getBS16
+    fileName <- getBS16
     pure Packet{..}
