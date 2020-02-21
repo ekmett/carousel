@@ -49,7 +49,8 @@ library matrix
   hs-source-dirs: src/matrix
   build-depends:
     loop,
-    vector
+    vector,
+    vector-split
   signatures: Field
   exposed-modules:
     Matrix
@@ -91,7 +92,7 @@ library
 
 executable carousel
   import: base
-  main-is: src/Main.hs
+  main-is: Main.hs
   build-depends: carousel
   build-depends:
     bytestring,
