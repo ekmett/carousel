@@ -14,48 +14,87 @@ copyright:
 build-type: Simple
 
 common base
-  build-depends:
-    base,
-    bytestring,
-    data-default,
-    network
-  ghc-options: -Wall
   default-language: Haskell2010
+  build-depends: base
+  ghc-options: -Wall
+
+library net
+  import: base
+  hs-source-dirs: src/net
+  build-depends:
+    bytestring,
+    cereal,
+    network,
+    data-default,
+    contravariant,
+    cryptohash-sha256,
+  exposed-modules:
+    Filter
+    Hashed
+
+library fields
+  import: base
+  hs-source-dirs: src/fields
+  build-depends:
+    hashable,
+    loop,
+    primitive,
+    template-haskell,
+    vector
+  exposed-modules:
+    GF2_8
+
+library matrix
+  import: base
+  hs-source-dirs: src/matrix
+  build-depends:
+    loop,
+    vector
+  signatures: Field
+  exposed-modules:
+    Matrix
 
 library
   import: base
+  hs-source-dirs: src/carousel
   build-depends:
+    bytestring,
     bytestring-to-vector,
+    data-default,
     cereal,
-    contravariant,
-    cryptohash-sha256,
     exceptions,
-    hashable,
     hw-prim,
     loop,
     mtl,
-    primitive,
-    template-haskell,
+    network,
     transformers,
     vector,
     vector-split
 
-  -- Data.Carousel.Gather
   exposed-modules:
     Data.Carousel
     Data.Carousel.Codec
     Data.Carousel.Scatter
     Data.Carousel.Packet
-    Data.Carousel.Internal
-    Galois.Field
+
+  other-modules:
+    Util
+
+  build-depends: fields, matrix, net
+  mixins: fields (GF2_8 as Galois.Field)
+  mixins: matrix (Matrix as Galois.Matrix) requires (Field as Galois.Field)
+  mixins: net (Filter as Data.Carousel.Filter, Hashed)
+  reexported-modules:
+    Data.Carousel.Filter,
+    Galois.Field,
     Galois.Matrix
-    Network.Filter
-  hs-source-dirs: src
 
 executable carousel
   import: base
-  main-is: app/Main.hs
+  main-is: src/Main.hs
+  build-depends: carousel
   build-depends:
+    bytestring,
     iproute,
     optparse-applicative,
-    carousel
+    network

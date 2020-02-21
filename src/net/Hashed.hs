@@ -1,7 +1,5 @@
-module Data.Carousel.Internal
-  ( cdiv
-  , sha256
-  , Hashed(..)
+module Hashed
+  ( Hashed(..)
   ) where
 
 import Data.ByteString
@@ -9,9 +7,6 @@ import Data.Serialize
 import Control.Monad (when)
 import Control.Monad.Fail as Monad
 import Crypto.Hash.SHA256 as Hash
-
-cdiv :: Integral a => a -> a -> a
-cdiv a b = div (a - 1) b + 1
 
 sha256 :: ByteString -> ByteString
 sha256 bs = Hash.finalize $ Hash.update Hash.init bs

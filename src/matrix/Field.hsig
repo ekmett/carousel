@@ -1,0 +1,11 @@
+signature Field where
+
+import Foreign.Storable
+
+data F
+
+instance Storable F
+instance Eq F
+instance Num F
+instance Show F
+instance Fractional F

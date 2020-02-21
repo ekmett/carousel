@@ -11,6 +11,7 @@ import Data.String
 import Network.Socket
 import Options.Applicative
 
+
 data Options
   = Options
   { ip        :: !IP

@@ -1,14 +1,15 @@
 {-# Language BlockArguments #-}
 {-# Language RankNTypes #-}
 {-# Language PatternGuards #-}
-module Galois.Matrix
+module Matrix
   ( Matrix(..)
   , Vec
   , ident
   , mul
   , submatrix
   , inv
-  , vandermonde
+  , generate
+--  , vandermonde
   , rowmatrix
   , vec
   , row
@@ -24,9 +25,9 @@ import qualified Data.Vector.Generic as GV hiding (Vector)
 import qualified Data.Vector.Generic.Mutable as GMV
 import qualified Data.Vector.Storable as SV
 import Control.Loop (numLoop, numLoopFold)
-import Galois.Field
+import Field
 
-type Vec = SV.Vector G
+type Vec = SV.Vector F
 
 -- | A row-major 'Matrix' of G entries
 -- TODO: columns should be stored so we can have a 0 row matrix
@@ -40,8 +41,7 @@ matrixSize (Matrix cs m) = (V.length m, cs)
 
 ident :: Int -> Matrix
 ident n = Matrix n $ GV.generate n \i -> SV.slice (n-i) n v where -- uses one backing vector
-  v = SV.generate (n+n) \i -> if i == n then G 1 else G 0
-  -- V.generate n \i -> V.generate n \j -> if i == j then G 1 else G 0
+  v = SV.generate (n+n) \i -> if i == n then 1 else 0
 
 data DimensionMismatch = DimensionMismatch String deriving (Show, Eq)
 instance Exception DimensionMismatch
@@ -60,13 +60,13 @@ cols (Matrix cs _) = cs
 rows :: Matrix -> Int
 rows (Matrix _ m) = V.length m
 
-at :: Matrix -> Int -> Int -> G
+at :: Matrix -> Int -> Int -> F
 at (Matrix _ m) i j = SV.unsafeIndex (V.unsafeIndex m i) j
 
 instance Semigroup Matrix where
   (<>) = mul
 
-generate :: Int -> Int -> (Int -> Int -> G) -> Matrix
+generate :: Int -> Int -> (Int -> Int -> F) -> Matrix
 generate rs cs f = Matrix cs $ V.generate rs \i -> SV.generate cs \j -> f i j
 
 mul :: Matrix -> Matrix -> Matrix
@@ -113,7 +113,7 @@ inv m@(Matrix n _)
     [ "Can't invert non-square matrix of size", show (matrixSize m) ]
   | otherwise = submatrix (gaussianElimination (augment m (ident n))) 0 n n (n * 2)
 
-modify :: (forall s. V.MVector s (SV.Vector G) -> ST s ()) -> Matrix -> Matrix
+modify :: (forall s. V.MVector s Vec -> ST s ()) -> Matrix -> Matrix
 modify f m = Matrix (cols m) $ V.modify f (vec m) where
 
 gaussianElimination :: Matrix -> Matrix
@@ -122,7 +122,7 @@ gaussianElimination = modify \ m -> do
 
   numLoop 0 (n - 1) \r -> do
     mrr <- load m r r
-    when (mrr == G 0) do
+    when (mrr == 0) do
       let go i = when (i < n) $
             load m i r >>= \scale ->
               if scale /= 0
@@ -131,16 +131,16 @@ gaussianElimination = modify \ m -> do
       go (r+1)
 
     mrr' <- load m r r
-    when (mrr' == G 0) $ unsafeIOToST $ throw SingularMatrix
+    when (mrr' == 0) $ unsafeIOToST $ throw SingularMatrix
 
-    when (mrr' /= G 1) do
+    when (mrr' /= 1) do
       let scale = recip mrr'
       mr <- GMV.read m r
       GMV.write m r $ SV.map (*scale) mr
 
     when (n > r + 1) $ numLoop (r + 1) (n - 1) \i -> do
       scale <- load m i r
-      when (scale /= G 0) do
+      when (scale /= 0) do
         mr <- GMV.read m r
         mi <- GMV.read m i
         GMV.write m i $ SV.zipWith (+) mi $ SV.map (scale*) mr
@@ -148,19 +148,16 @@ gaussianElimination = modify \ m -> do
   numLoop 0 (n - 1) \d ->
     when (d > 0) $ numLoop 0 (d - 1) \i -> do
       scale <- load m i d
-      when (scale /= G 0) do
+      when (scale /= 0) do
         mi <- GMV.read m i
         md <- GMV.read m d
         GMV.write m i $ SV.zipWith (+) mi $ SV.map (scale *) md
   where
-    load :: V.MVector s Vec -> Int -> Int -> ST s G
+    load :: V.MVector s Vec -> Int -> Int -> ST s F
     load m i j = do
       r <- GMV.read m i
       SV.indexM r j
 
-vandermonde :: Int -> Int -> Matrix
-vandermonde rs cs = generate rs cs \i j -> X i ^ j
-  -- G (i+1) ^ j would be a little cheaper, but a different order
 
 rowmatrix :: Matrix -> Int -> Matrix
 rowmatrix (Matrix cs m) i = Matrix cs $ V.singleton (m V.! i)

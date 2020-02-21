@@ -13,7 +13,6 @@ import Data.ByteString.Lazy as Lazy
 import Data.Foldable as Foldable
 import Data.Serialize
 import Data.Carousel.Codec
-import Data.Carousel.Internal
 import Data.Carousel.Packet
 import Data.Vector as V
 import Data.Vector.Storable as S
@@ -25,6 +24,8 @@ import HaskellWorks.Data.ByteString
 import Network.Socket
 import Network.Socket.ByteString as Strict
 import System.IO
+import Hashed
+import Util
 
 -- an @dataShards x payloadSize@ row major matrix as a single vector
 type Chunk = Vec

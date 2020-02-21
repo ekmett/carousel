@@ -20,6 +20,7 @@ module Data.Carousel.Codec
   ) where
 
 import Data.Default
+import Galois.Field
 import Galois.Matrix as Mat
 import Data.Vector as V
 import Data.Vector.Storable as S
@@ -77,3 +78,6 @@ cache = V.generate 255 \i -> let
     vm = vandermonde 255 ds
     m = Mat.mul vm $ Mat.inv $ submatrix vm 0 0 ds ds
   in S.concat $ V.toList (vec m)
+
+vandermonde :: Int -> Int -> Matrix
+vandermonde rs cs = Mat.generate rs cs \i j -> X i ^ j

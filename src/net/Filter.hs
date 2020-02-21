@@ -1,5 +1,5 @@
 {-# Language BlockArguments #-}
-module Network.Filter
+module Filter
   ( Filter(..)
   ) where
 

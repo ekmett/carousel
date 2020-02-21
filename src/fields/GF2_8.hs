@@ -8,8 +8,8 @@
 {-# Language DeriveGeneric #-}
 
 -- | GF(2^8) mod x^8 + x^4 + x^3 + x^2 + x^0
-module Galois.Field
-  ( G(..)
+module GF2_8
+  ( F(..)
   , glog
   , gexp
   , pattern X
@@ -86,61 +86,61 @@ pkM :: PrimMonad m => Ptr Word8 -> Int -> m Word8
 pkM p i = unsafeIOToPrim $ peekElemOff p i
     
 -- assumes i != 0
-glog :: G -> Int
-glog (G i) = fromIntegral $ pk logs (fromIntegral i)
+glog :: F -> Int
+glog (F i) = fromIntegral $ pk logs (fromIntegral i)
 {-# INLINE glog #-}
 
 -- assumes 0 <= i <= 510
-gexp :: Int -> G
-gexp i = G $ pk exps i
+gexp :: Int -> F
+gexp i = F $ pk exps i
 {-# INLINE gexp #-}
 
-pattern X :: Int -> G
+pattern X :: Int -> F
 pattern X i <- (glog -> i) where
-  X i = G $ pk (plusPtr exps 255) $ mod i 255
+  X i = F $ pk (plusPtr exps 255) $ mod i 255
 -- (256*a+b) mod 255 = (255*a+a+b) mod 255 = (a+b) mod 255
 
 -- an 8-bit galois field with polynomial 29
-newtype G = G Word8
+newtype F = F Word8
   deriving (Show, Storable, Eq, Hashable, Generic)
 
--- instance Show G where showsPrec d (X i) = showParen (d > 10) $ showString "X " . showsPrec 11 i
+-- instance Show F where showsPrec d (X i) = showParen (d > 10) $ showString "X " . showsPrec 11 i
 
-instance Num G where
-  G a + G b = G $ xor a b
-  G a - G b = G $ xor a b
-  G a * G b = G $ pk muls $ unsafeShiftL (fromIntegral a) 8 .|. fromIntegral b
+instance Num F where
+  F a + F b = F $ xor a b
+  F a - F b = F $ xor a b
+  F a * F b = F $ pk muls $ unsafeShiftL (fromIntegral a) 8 .|. fromIntegral b
   negate = id
   abs = id
-  signum (G i) = G $ signum i
-  fromInteger i = G $ if odd i then 1 else 0
+  signum (F i) = F $ signum i
+  fromInteger i = F $ if odd i then 1 else 0
 
-instance Fractional G where
-  _ / G 0 = throw DivideByZero
+instance Fractional F where
+  _ / F 0 = throw DivideByZero
   a / b = gexp $ glog a + 255 - glog b
-  recip (G 0) = throw DivideByZero
+  recip (F 0) = throw DivideByZero
   recip b = gexp $ 255 - glog b
   fromRational r
-    | even (denominator r) = G 0 
+    | even (denominator r) = F 0 
     | otherwise = fromInteger (numerator r)
 
 -- non-SIMD multiplication
 
 -- | @gvmul o c i@ sets @o := c*i@ in the galois field
-gvmul :: PrimMonad m => MS.MVector (PrimState m) G -> G -> S.Vector G -> m ()
-gvmul o (G c) i = do
+gvmul :: PrimMonad m => MS.MVector (PrimState m) F -> F -> S.Vector F -> m ()
+gvmul o (F c) i = do
   let mt = plusPtr muls $ 256 * fromIntegral c
   numLoop 0 (MS.length o - 1) \j -> do
-    G a <- S.unsafeIndexM i j
+    F a <- S.unsafeIndexM i j
     b <- pkM mt $ fromIntegral a
-    MS.unsafeWrite o j $ G b
+    MS.unsafeWrite o j $ F b
 
 -- | @vfma o c i@ sets @o += c*i@ in the galois field
-gvfma :: PrimMonad m => MS.MVector (PrimState m) G -> G -> S.Vector G -> m ()
-gvfma o (G c) i = do
+gvfma :: PrimMonad m => MS.MVector (PrimState m) F -> F -> S.Vector F -> m ()
+gvfma o (F c) i = do
   let mt = plusPtr muls $ 256 * fromIntegral c
   numLoop 0 (MS.length o - 1) \j -> do
-    G a <- S.unsafeIndexM i j
+    F a <- S.unsafeIndexM i j
     b <- pkM mt $ fromIntegral a
     x <- MS.unsafeRead o j
-    MS.unsafeWrite o j $ x + G b
+    MS.unsafeWrite o j $ x + F b
